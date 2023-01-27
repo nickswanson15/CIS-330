@@ -1,0 +1,168 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
+#include "main.h"
+
+#define MAX_NUM_LENGTH 12
+
+
+void usage(int argc, char** argv)
+{
+    if(argc < 4) {
+        fprintf(stderr, 
+                "usage: %s <input file 1> <input file 2> <output file>\n", 
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+int get_num_ints(char** argv)
+{
+  const char* file1 = argv[1];
+  const char* file2 = argv[2];
+
+  int c1;
+  int count1 = 0;
+
+  FILE* fp1 = fopen(file1, "r");
+  if (fp1 == NULL) {
+    fprintf(stderr, "error opening file 1");
+    exit(EXIT_FAILURE);
+  }
+
+  while ((c1 = fgetc(fp1)) != EOF) {
+    if (c1 == '\n') {
+        count1++;
+    }
+  }
+  fclose(fp1);
+
+  int c2;
+  int count2 = 0;
+
+  FILE* fp2 = fopen(file2, "r");
+  if (fp2 == NULL) {
+    fprintf(stderr, "error opening file 2");
+    exit(EXIT_FAILURE);
+  }
+
+  while ((c2 = fgetc(fp2)) != EOF) {
+    if (c2 == '\n') {
+        count2++;
+    }
+  }
+  fclose(fp2);
+
+  if (count1 == count2) {
+    return count1;
+  }
+  else {
+    return -1;
+  }
+}
+
+
+void allocate_mem(unsigned int** input_one, unsigned int** input_two, 
+                  unsigned long int** output, int num_ints)
+{
+  *input_one = (unsigned int*)malloc(num_ints * sizeof(unsigned int));
+  if (*input_one == NULL) {
+    fprintf(stderr, "error mallocing input 1");
+    exit(EXIT_FAILURE);
+  }
+  *input_two = (unsigned int*)malloc(num_ints * sizeof(unsigned int));
+  if (*input_two == NULL) {
+    fprintf(stderr, "error mallocing input 2");
+    free(*input_one);
+    exit(EXIT_FAILURE);
+  }
+  *output = (unsigned long int*)malloc(num_ints * sizeof(unsigned long int));
+  if (*output == NULL) {
+    fprintf(stderr, "error mallocing output");
+    free(*input_one);
+    free(*input_two);
+    exit(EXIT_FAILURE);
+  }
+
+}
+
+
+
+void get_ints(char** argv, unsigned int* input_one, unsigned int* input_two,
+              unsigned long int* output, int num_ints)
+{
+    FILE* input_one_file = fopen(argv[1], "r");
+    FILE* input_two_file = fopen(argv[2], "r");
+    if (input_one_file == NULL || input_two_file == NULL) {
+        printf("error opening files");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < num_ints; i++) {
+        fscanf(input_one_file, "%u", &input_one[i]);
+        fscanf(input_two_file, "%u", &input_two[i]);
+    }
+    fclose(input_one_file);
+    fclose(input_two_file);
+}
+
+
+void sum_ints(unsigned int* input_one, unsigned int* input_two, 
+              unsigned long int* output, int num_ints)
+{
+    for (int i = 0; i < num_ints; i++) {
+      unsigned long int temp = (unsigned long int)input_one[i] + (unsigned long int)input_two[i];
+      output[i] = temp;
+    }
+}
+
+
+void save_output(char** argv, unsigned int* input_one, unsigned int* input_two,
+                 unsigned long int* output, int num_ints)
+{
+    char* filename = argv[3];
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("error creating output file");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < num_ints; i++) {
+  
+        fprintf(fp, "%lu\n", output[i]);
+    }
+    fclose(fp);
+}
+
+
+int main(int argc, char** argv)
+{
+    usage(argc, argv);
+
+    // Check the number of integers in the input files
+    int num_ints = get_num_ints(argv);
+    if(num_ints == -1) {
+        fprintf(stderr, "ERR: The two input files have different # of ints\n");
+        exit(EXIT_FAILURE);
+    } 
+
+    unsigned int* input_one = NULL;
+    unsigned int* input_two = NULL;
+    unsigned long int* output = NULL;
+    // Allocate memory to store the integers
+    allocate_mem(&input_one, &input_two, &output, num_ints);
+
+    // Read the integers from the two input files
+    get_ints(argv, input_one, input_two, output, num_ints);
+   
+    // Sum up the numbers
+    sum_ints(input_one, input_two, output, num_ints);
+
+    // Store the result in the output file 
+    save_output(argv, input_one, input_two, output, num_ints);
+
+    free(input_one);
+    free(input_two);
+    free(output);
+
+    return 0;
+}
